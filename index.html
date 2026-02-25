@@ -25,6 +25,9 @@
         .del-text { color: var(--danger); font-size: 12px; text-decoration: underline; cursor: pointer; }
         .pos { color: #e67e22; font-weight: bold; }
         .neg { color: #27ae60; font-weight: bold; }
+        /* 追分模式下的布局辅助 */
+        .flex-row { display: flex; gap: 10px; align-items: center; }
+        .flex-row > div { flex: 1; }
     </style>
 </head>
 <body>
@@ -44,10 +47,17 @@
         <option value="中八">中八</option>
         <option value="追分">追分</option>
     </select>
-    <label>盘口与比分</label>
+
+    <label>盘口/比分</label>
     <input id="handicap" placeholder="盘口: 如 A让B后2">
+    
     <div id="scoreSection">
         <input id="score" placeholder="比分: 如 11:7" style="margin-top:10px">
+    </div>
+
+    <div id="multiplierSection" style="display:none">
+        <label>倍率 (×几)</label>
+        <input id="multiplier" type="number" value="1" placeholder="每分多少钱" oninput="calculateAllMoney()">
     </div>
     
     <h3>玩家信息</h3>
@@ -74,10 +84,8 @@
 </div>
 
 <script>
-// --- 配置区 ---
 const SUPABASE_URL = 'https://ajfyuffofmxaucturukn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_y9VSWzjzA73CqeQTqoQcKg_YhtL01uJ';
-// --------------
 
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let globalPlayerList = [];
@@ -93,9 +101,14 @@ async function fetchPlayerList() {
 }
 
 function addPlayerRow() {
+    const mode = document.getElementById('mode').value;
     const div = document.createElement('div');
     div.className = 'player';
     let options = globalPlayerList.map(name => `<option value="${name}">${name}</option>`).join('');
+    
+    // 根据模式决定是否显示“分数”输入框
+    const showScoreInput = (mode === '追分') ? 'block' : 'none';
+
     div.innerHTML = `
         <button class="remove-btn" onclick="this.parentNode.remove()">✕</button>
         <label>姓名</label>
@@ -105,10 +118,45 @@ function addPlayerRow() {
             <option value="__NEW__" style="color:blue">+ 新增玩家</option>
         </select>
         <input class="new-name-input" placeholder="输入新姓名" style="display:none; margin-top:10px; border-color:var(--accent)">
-        <label>金额</label>
-        <input class="money" type="number" placeholder="赢+ 输-">
+        
+        <div class="flex-row" style="margin-top:12px">
+            <div class="score-input-wrap" style="display:${showScoreInput}">
+                <label>分数</label>
+                <input class="p-score" type="number" placeholder="分数" oninput="calculateMoney(this.parentNode.parentNode.parentNode)">
+            </div>
+            <div>
+                <label>金额</label>
+                <input class="money" type="number" placeholder="赢+ 输-">
+            </div>
+        </div>
     `;
     document.getElementById('playersArea').appendChild(div);
+}
+
+// 计算单个玩家金额
+function calculateMoney(playerDiv) {
+    if (document.getElementById('mode').value !== '追分') return;
+    const mult = Number(document.getElementById('multiplier').value) || 0;
+    const score = Number(playerDiv.querySelector('.p-score').value) || 0;
+    playerDiv.querySelector('.money').value = mult * score;
+}
+
+// 当倍率变化时，重新计算所有人金额
+function calculateAllMoney() {
+    document.querySelectorAll('.player').forEach(div => calculateMoney(div));
+}
+
+function updateMode() {
+    const mode = document.getElementById('mode').value;
+    const isZhuifen = (mode === '追分');
+    
+    document.getElementById('scoreSection').style.display = isZhuifen ? 'none' : 'block';
+    document.getElementById('multiplierSection').style.display = isZhuifen ? 'block' : 'none';
+    
+    // 同步更新已有的玩家输入框显示
+    document.querySelectorAll('.score-input-wrap').forEach(el => {
+        el.style.display = isZhuifen ? 'block' : 'none';
+    });
 }
 
 function checkNewPlayer(select) {
@@ -119,6 +167,7 @@ function checkNewPlayer(select) {
 async function saveGame() {
     const btn = document.getElementById('saveBtn');
     const rows = document.querySelectorAll('.player');
+    const mode = document.getElementById('mode').value;
     let names = [], money = [], newNames = [];
 
     for (let row of rows) {
@@ -131,14 +180,21 @@ async function saveGame() {
         if (sel.value === "__NEW__" && !globalPlayerList.includes(n)) newNames.push({name: n});
     }
 
+    if (names.length === 0) return alert("请至少添加一名玩家");
+
     btn.disabled = true; btn.innerText = "同步中...";
     if (newNames.length > 0) await _supabase.from('players').insert(newNames);
 
+    // 如果是追分模式，结果字段记录倍率信息
+    const resultVal = (mode === '追分') 
+        ? `倍率: ×${document.getElementById('multiplier').value}` 
+        : document.getElementById('score').value;
+
     const payload = {
         time: new Date().toLocaleString('zh-CN', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}),
-        mode: document.getElementById('mode').value,
+        mode: mode,
         handicap: document.getElementById('handicap').value,
-        result: document.getElementById('score').value,
+        result: resultVal,
         players: names,
         money: money
     };
@@ -179,16 +235,11 @@ async function loadRecords() {
     ranking.innerHTML = rankHtml + `</tbody></table>`;
 }
 
-// 删除功能
 async function deleteRecord(id) {
-    if (!confirm("确定要删除这条记录吗？删除后奖金榜也会自动更新。")) return;
+    if (!confirm("确定要删除这条记录吗？")) return;
     const { error } = await _supabase.from('records').delete().eq('id', id);
     if (error) alert("删除失败: " + error.message);
     else location.reload();
-}
-
-function updateMode() {
-    document.getElementById('scoreSection').style.display = (document.getElementById('mode').value === '中八') ? 'block' : 'none';
 }
 
 init();
