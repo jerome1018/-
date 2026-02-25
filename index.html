@@ -36,7 +36,7 @@
 <div id="status" class="status">同步中...</div>
 
 <div class="box">
-    <h2>🏆 总奖金榜</h2>
+    <h2>🏆 总积分榜</h2>
     <div id="ranking">加载中...</div>
 </div>
 
@@ -48,8 +48,8 @@
         <option value="追分">追分</option>
     </select>
 
-    <label>盘口/比分</label>
-    <input id="handicap" placeholder="盘口: 如 A让B后2">
+    <label>门/比分</label>
+    <input id="handicap" placeholder="门: 如 A让B后2">
     
     <div id="scoreSection">
         <input id="score" placeholder="比分: 如 11:7" style="margin-top:10px">
@@ -57,7 +57,7 @@
 
     <div id="multiplierSection" style="display:none">
         <label>倍率 (×几)</label>
-        <input id="multiplier" type="number" value="1" placeholder="每分多少钱" oninput="calculateAllMoney()">
+        <input id="multiplier" type="number" value="1" placeholder="每分多少积分" oninput="calculateAllMoney()">
     </div>
     
     <h3>玩家信息</h3>
@@ -74,7 +74,7 @@
                 <tr>
                     <th>时间/玩法</th>
                     <th>结果</th>
-                    <th>详情(金额)</th>
+                    <th>详情(积分)</th>
                     <th>操作</th>
                 </tr>
             </thead>
@@ -125,7 +125,7 @@ function addPlayerRow() {
                 <input class="p-score" type="number" placeholder="分数" oninput="calculateMoney(this.parentNode.parentNode.parentNode)">
             </div>
             <div>
-                <label>金额</label>
+                <label>积分</label>
                 <input class="money" type="number" placeholder="赢+ 输-">
             </div>
         </div>
@@ -133,7 +133,7 @@ function addPlayerRow() {
     document.getElementById('playersArea').appendChild(div);
 }
 
-// 计算单个玩家金额
+// 计算单个玩家积分
 function calculateMoney(playerDiv) {
     if (document.getElementById('mode').value !== '追分') return;
     const mult = Number(document.getElementById('multiplier').value) || 0;
@@ -141,7 +141,7 @@ function calculateMoney(playerDiv) {
     playerDiv.querySelector('.money').value = mult * score;
 }
 
-// 当倍率变化时，重新计算所有人金额
+// 当倍率变化时，重新计算所有人积分
 function calculateAllMoney() {
     document.querySelectorAll('.player').forEach(div => calculateMoney(div));
 }
@@ -228,7 +228,7 @@ async function loadRecords() {
         r.players.forEach((p,i) => rankMap[p] = (rankMap[p]||0) + r.money[i]);
     });
 
-    let rankHtml = `<table><thead><tr><th>姓名</th><th>总奖金</th></tr></thead><tbody>`;
+    let rankHtml = `<table><thead><tr><th>姓名</th><th>总积分</th></tr></thead><tbody>`;
     Object.entries(rankMap).sort((a,b)=>b[1]-a[1]).forEach(([n, v]) => {
         rankHtml += `<tr><td>${n}</td><td class="${v>=0?'pos':'neg'}">${v>0?'+'+v:v}</td></tr>`;
     });
