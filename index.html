@@ -8,166 +8,190 @@
     <style>
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f0f2f5; --card: #ffffff; --danger: #e74c3c; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: #333; padding: 15px; margin: 0; line-height: 1.5; }
-        h1 { text-align: center; font-size: 1.5rem; color: var(--primary); margin-bottom: 20px; }
-        .box { background: var(--card); padding: 18px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        h2 { font-size: 1.1rem; margin-bottom: 15px; border-left: 4px solid var(--accent); padding-left: 10px; }
-        label { display: block; margin-top: 15px; font-weight: bold; font-size: 0.9rem; color: #666; }
-        input, select { box-sizing: border-box; padding: 12px; margin-top: 6px; width: 100%; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; background: #fafafa; }
-        .player { background: #fdfdfd; border: 1px solid #eee; padding: 15px; margin-top: 15px; border-radius: 10px; position: relative; }
-        .remove-btn { position: absolute; right: 5px; top: 5px; color: var(--danger); background: none; border: none; font-size: 20px; cursor: pointer; }
-        button { display: block; width: 100%; padding: 12px; margin-top: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .btn-add { background: #ecf0f1; color: var(--primary); border: 1px dashed #bdc3c7; }
-        .btn-save { background: var(--accent); color: white; margin-top: 25px; }
-        .table-container { width: 100%; overflow-x: auto; }
-        table { width: 100%; min-width: 400px; border-collapse: collapse; font-size: 14px; }
-        th, td { border-bottom: 1px solid #eee; padding: 12px 8px; text-align: left; }
-        .status { text-align: center; font-size: 12px; color: #999; margin-bottom: 10px; }
+        h1 { text-align: center; font-size: 1.4rem; color: var(--primary); margin: 10px 0; }
+        .box { background: var(--card); padding: 18px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        h2 { font-size: 1.1rem; margin-bottom: 12px; border-left: 4px solid var(--accent); padding-left: 10px; display: flex; justify-content: space-between; align-items: center; }
+        label { display: block; margin-top: 12px; font-weight: bold; font-size: 0.85rem; color: #666; }
+        input, select { box-sizing: border-box; padding: 12px; margin-top: 5px; width: 100%; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; background: #fafafa; }
+        .player { background: #fdfdfd; border: 1px solid #eee; padding: 12px; margin-top: 12px; border-radius: 10px; position: relative; }
+        .remove-btn { position: absolute; right: 5px; top: 5px; color: var(--danger); background: none; border: none; font-size: 18px; }
+        button { display: block; width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-add { background: #ecf0f1; color: var(--primary); border: 1px dashed #bdc3c7; margin-top: 10px; }
+        .btn-save { background: var(--accent); color: white; margin-top: 20px; }
+        .status { text-align: center; font-size: 11px; color: #999; margin-bottom: 8px; }
+        .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; min-width: 350px; border-collapse: collapse; font-size: 13px; }
+        th, td { border-bottom: 1px solid #eee; padding: 10px 5px; text-align: left; }
+        .del-text { color: var(--danger); font-size: 12px; text-decoration: underline; cursor: pointer; }
         .pos { color: #e67e22; font-weight: bold; }
         .neg { color: #27ae60; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<h1>🎱 北航大师赛 (云端版)</h1>
+<h1>🎱 北航大师赛 (云端同步)</h1>
 <div id="status" class="status">同步中...</div>
 
 <div class="box">
-    <h2>新增对局</h2>
+    <h2>🏆 总奖金榜</h2>
+    <div id="ranking">加载中...</div>
+</div>
+
+<div class="box">
+    <h2>📝 新增对局</h2>
     <label>玩法</label>
     <select id="mode" onchange="updateMode()">
         <option value="中八">中八</option>
         <option value="追分">追分</option>
     </select>
-    <label>盘口</label>
-    <input id="handicap" placeholder="例如：A让B 后2" />
+    <label>盘口与比分</label>
+    <input id="handicap" placeholder="盘口: 如 A让B后2">
     <div id="scoreSection">
-        <label>比分（中八）</label>
-        <input id="score" placeholder="例如：11:7" />
+        <input id="score" placeholder="比分: 如 11:7" style="margin-top:10px">
     </div>
+    
     <h3>玩家信息</h3>
-    <div id="players"></div>
-    <button class="btn-add" onclick="addPlayer()">➕ 添加玩家</button>
-    <button id="saveBtn" class="btn-save" onclick="saveToCloud()">💾 同步到云端</button>
+    <div id="playersArea"></div>
+    <button class="btn-add" onclick="addPlayerRow()">➕ 添加玩家</button>
+    <button id="saveBtn" class="btn-save" onclick="saveGame()">💾 同步到云端</button>
 </div>
 
 <div class="box">
-    <h2>最近记录</h2>
+    <h2>🕒 最近记录</h2>
     <div class="table-container">
-        <table>
-            <thead><tr><th>玩法/时间</th><th>结果</th><th>详情(金额)</th></tr></thead>
-            <tbody id="recent"></tbody>
+        <table id="recentTable">
+            <thead>
+                <tr>
+                    <th>时间/玩法</th>
+                    <th>结果</th>
+                    <th>详情(金额)</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="recentBody"></tbody>
         </table>
     </div>
 </div>
 
-<div class="box">
-    <h2>总奖金榜</h2>
-    <table id="rankingTable">
-        <thead><tr><th>姓名</th><th>总奖金</th></tr></thead>
-        <tbody id="ranking"></tbody>
-    </table>
-</div>
-
 <script>
 // --- 配置区 ---
-const SUPABASE_URL = 'https://ajfyuffofmxaucturukn.supabase.co'; // 这里填 https:// 开头的那个网址
-const SUPABASE_KEY = 'sb_publishable_y9VSWzjzA73CqeQTqoQcKg_YhtL01uJ'; // 这是你刚拿到的Key
+const SUPABASE_URL = '你的Project URL';
+const SUPABASE_KEY = '你的API Key';
 // --------------
 
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let globalPlayerList = [];
 
-// 核心功能：保存数据
-async function saveToCloud() {
+async function init() {
+    await fetchPlayerList();
+    await loadRecords();
+}
+
+async function fetchPlayerList() {
+    const { data } = await _supabase.from('players').select('name').order('name');
+    if (data) globalPlayerList = data.map(p => p.name);
+}
+
+function addPlayerRow() {
+    const div = document.createElement('div');
+    div.className = 'player';
+    let options = globalPlayerList.map(name => `<option value="${name}">${name}</option>`).join('');
+    div.innerHTML = `
+        <button class="remove-btn" onclick="this.parentNode.remove()">✕</button>
+        <label>姓名</label>
+        <select class="name-select" onchange="checkNewPlayer(this)">
+            <option value="">-- 请选择 --</option>
+            ${options}
+            <option value="__NEW__" style="color:blue">+ 新增玩家</option>
+        </select>
+        <input class="new-name-input" placeholder="输入新姓名" style="display:none; margin-top:10px; border-color:var(--accent)">
+        <label>金额</label>
+        <input class="money" type="number" placeholder="赢+ 输-">
+    `;
+    document.getElementById('playersArea').appendChild(div);
+}
+
+function checkNewPlayer(select) {
+    const input = select.parentNode.querySelector('.new-name-input');
+    input.style.display = (select.value === "__NEW__") ? "block" : "none";
+}
+
+async function saveGame() {
     const btn = document.getElementById('saveBtn');
-    const names = [...document.querySelectorAll('.name')].map(i => i.value.trim());
-    const money = [...document.querySelectorAll('.money')].map(i => Number(i.value));
-    const points = [...document.querySelectorAll('.point')].map(i => Number(i.value || 0));
+    const rows = document.querySelectorAll('.player');
+    let names = [], money = [], newNames = [];
 
-    if (names.length < 2 || names.some(n => !n)) return alert("请完整填写玩家信息");
+    for (let row of rows) {
+        const sel = row.querySelector('.name-select');
+        const inp = row.querySelector('.new-name-input');
+        const mon = Number(row.querySelector('.money').value);
+        let n = (sel.value === "__NEW__") ? inp.value.trim() : sel.value;
+        if (!n) return alert("请完整填写");
+        names.push(n); money.push(mon);
+        if (sel.value === "__NEW__" && !globalPlayerList.includes(n)) newNames.push({name: n});
+    }
 
-    btn.disabled = true;
-    btn.innerText = "同步中...";
+    btn.disabled = true; btn.innerText = "同步中...";
+    if (newNames.length > 0) await _supabase.from('players').insert(newNames);
 
     const payload = {
         time: new Date().toLocaleString('zh-CN', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}),
         mode: document.getElementById('mode').value,
         handicap: document.getElementById('handicap').value,
-        result: document.getElementById('mode').value === '中八' ? document.getElementById('score').value : points.join(','),
+        result: document.getElementById('score').value,
         players: names,
         money: money
     };
 
     const { error } = await _supabase.from('records').insert([{ data: payload }]);
-
-    if (error) {
-        alert("错误: " + error.message);
-        btn.disabled = false;
-        btn.innerText = "💾 重试同步";
-    } else {
-        location.reload();
-    }
+    if (error) { alert(error.message); btn.disabled = false; } else { location.reload(); }
 }
 
-// 核心功能：加载并渲染数据
-async function loadData() {
-    const { data, error } = await _supabase.from('records').select('*').order('created_at', { ascending: false }).limit(20);
-    const statusEl = document.getElementById('status');
-    
-    if (error) {
-        statusEl.innerText = "❌ 连接失败";
-        return;
-    }
-    statusEl.innerText = "✅ 云端已同步";
+async function loadRecords() {
+    const { data } = await _supabase.from('records').select('*').order('created_at', { ascending: false }).limit(30);
+    const body = document.getElementById('recentBody');
+    const ranking = document.getElementById('ranking');
+    const status = document.getElementById('status');
 
-    const recent = document.getElementById('recent');
-    const rankData = {};
-    recent.innerHTML = "";
+    if (!data) { status.innerText = "❌ 连接失败"; return; }
+    status.innerText = "✅ 数据已实时同步";
+
+    let rankMap = {};
+    body.innerHTML = "";
 
     data.forEach(item => {
         const r = item.data;
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><strong>${r.mode}</strong><br><small>${r.time}</small></td>
+            <td><small>${r.time}</small><br><strong>${r.mode}</strong></td>
             <td><strong>${r.result}</strong><br><small>${r.handicap||'-'}</small></td>
-            <td>${r.players.map((p, i) => `${p}(${r.money[i]})`).join('<br>')}</td>
+            <td>${r.players.map((p,i)=>`${p}(${r.money[i]})`).join('<br>')}</td>
+            <td><span class="del-text" onclick="deleteRecord(${item.id})">删除</span></td>
         `;
-        recent.appendChild(tr);
-
-        // 统计奖金
-        r.players.forEach((name, i) => {
-            rankData[name] = (rankData[name] || 0) + r.money[i];
-        });
+        body.appendChild(tr);
+        r.players.forEach((p,i) => rankMap[p] = (rankMap[p]||0) + r.money[i]);
     });
 
-    const ranking = document.getElementById('ranking');
-    ranking.innerHTML = "";
-    Object.entries(rankData).sort((a,b) => b[1] - a[1]).forEach(([name, total]) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${name}</td><td class="${total>=0?'pos':'neg'}">${total > 0 ? '+'+total : total}</td>`;
-        ranking.appendChild(tr);
+    let rankHtml = `<table><thead><tr><th>姓名</th><th>总奖金</th></tr></thead><tbody>`;
+    Object.entries(rankMap).sort((a,b)=>b[1]-a[1]).forEach(([n, v]) => {
+        rankHtml += `<tr><td>${n}</td><td class="${v>=0?'pos':'neg'}">${v>0?'+'+v:v}</td></tr>`;
     });
+    ranking.innerHTML = rankHtml + `</tbody></table>`;
 }
 
-function addPlayer() {
-    const mode = document.getElementById('mode').value;
-    const div = document.createElement('div');
-    div.className = 'player';
-    div.innerHTML = `
-        <button class="remove-btn" onclick="this.parentNode.remove()">✕</button>
-        <label>姓名</label><input class="name" placeholder="姓名" />
-        <label>金额</label><input class="money" type="number" placeholder="+/-" />
-        ${mode === '追分' ? '<label>分值</label><input class="point" type="number" />' : ''}
-    `;
-    document.getElementById('players').appendChild(div);
+// 删除功能
+async function deleteRecord(id) {
+    if (!confirm("确定要删除这条记录吗？删除后奖金榜也会自动更新。")) return;
+    const { error } = await _supabase.from('records').delete().eq('id', id);
+    if (error) alert("删除失败: " + error.message);
+    else location.reload();
 }
 
 function updateMode() {
-    document.getElementById('scoreSection').style.display = document.getElementById('mode').value === '中八' ? 'block' : 'none';
+    document.getElementById('scoreSection').style.display = (document.getElementById('mode').value === '中八') ? 'block' : 'none';
 }
 
-// 初始化
-loadData();
-updateMode();
+init();
 </script>
 </body>
 </html>
